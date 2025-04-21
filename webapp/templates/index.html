@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram WebApp Auth</title>
+    <!-- Import Telegram WebApp script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+            text-align: center;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: bold;
+        }
+        .success {
+            background-color: #dff0d8;
+            color: #3c763d;
+            border: 1px solid #d6e9c6;
+        }
+        .error {
+            background-color: #f2dede;
+            color: #a94442;
+            border: 1px solid #ebccd1;
+        }
+        #user-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            text-align: left;
+            word-wrap: break-word;
+            white-space: pre-wrap; /* Allows pre-formatted text wrapping */
+        }
+        pre {
+           white-space: pre-wrap; /* Ensure pre content wraps */
+           word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <h1>Telegram WebApp Authentication</h1>
+    <p>Validating your Telegram credentials...</p>
+    <div id="status"></div>
+    <div id="user-info" style="display: none;">
+        <h2>Authenticated User Info:</h2>
+        <pre id="user-details"></pre>
+    </div>
+    <div id="raw-initdata" style="display: none; margin-top: 20px; text-align: left;">
+        <h3>Raw initData (for debugging):</h3>
+        <pre id="initdata-details" style="font-size: 0.8em; background-color: #eee; padding: 5px; border-radius: 3px;"></pre>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tg = window.Telegram.WebApp;
+            const statusDiv = document.getElementById('status');
+            const userInfoDiv = document.getElementById('user-info');
+            const userDetailsPre = document.getElementById('user-details');
+            const rawInitDataDiv = document.getElementById('raw-initdata');
+            const initDataDetailsPre = document.getElementById('initdata-details');
+
+            // Expand the Web App to full height
+            tg.expand();
+
+            // Log raw initData for debugging (optional)
+            console.log("Raw initData:", tg.initData);
+            // Display raw initData on page (optional)
+            // initDataDetailsPre.textContent = tg.initData;
+            // rawInitDataDiv.style.display = 'block';
+
+            if (!tg.initData) {
+                statusDiv.textContent = 'Error: initData is empty. Are you running this inside Telegram?';
+                statusDiv.className = 'error';
+                return;
+            }
+
+            // Send initData to the backend for validation
+            fetch('/validate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ initData: tg.initData })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    // Try to get error message from response body
+                    return response.json().then(err => {
+                        throw new Error(err.message || `HTTP error! status: ${response.status}`);
+                    }).catch(() => {
+                        // If no JSON body, throw generic error
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    statusDiv.textContent = data.message;
+                    statusDiv.className = 'success';
+                    if (data.user_info) {
+                        userDetailsPre.textContent = JSON.stringify(data.user_info, null, 2);
+                        userInfoDiv.style.display = 'block';
+                    } else {
+                         userDetailsPre.textContent = "No specific user info returned, but validation passed.";
+                         userInfoDiv.style.display = 'block';
+                    }
+                    // You can now use the user_info to identify the user in your webapp
+                    // e.g., set cookies, redirect, etc.
+                } else {
+                    // This case might not be reached if using response.ok check above,
+                    // but kept for robustness
+                    statusDiv.textContent = `Validation Error: ${data.message}`;
+                    statusDiv.className = 'error';
+                }
+            })
+            .catch(error => {
+                console.error('Validation request failed:', error);
+                statusDiv.textContent = `Error: ${error.message}`;
+                statusDiv.className = 'error';
+            });
+        });
+    </script>
+</body>
+</html> 
