@@ -92,15 +92,26 @@ def validate_data():
     data = request.json
     init_data = data.get('initData')
 
+    # --- DEBUGGING: Print received initData --- 
+    # WARNING: This logs sensitive user information and the validation hash.
+    # DO NOT use this logging level in production environments.
+    # It's included here solely for demonstration/debugging purposes.
+    print("\n--- DEBUG START: Received initData ---")
+    print(f"Raw initData string: {init_data}")
+    print("--- WARNING: Above data is sensitive. Do not log in production! ---")
+    print("--- DEBUG END: Received initData ---\n")
+    # --- END DEBUGGING ---
+
     if not init_data:
         logger.warning("Received validation request with no initData.")
         return jsonify({'status': 'error', 'message': 'Missing initData'}), 400
 
-    logger.info("Received initData for validation.")
+    logger.info("Received initData for validation. Proceeding with validation...") # Changed log message slightly
     is_valid, user_info = validate_init_data(init_data, BOT_TOKEN)
 
     if is_valid:
-        logger.info(f"Validation successful. User Info: {user_info}")
+        # logger.info(f"Validation successful. User Info: {user_info}") # Avoid logging user info by default
+        logger.info("Validation successful.") # Simplified log
         # Here you would typically create a session for the user,
         # store user info in your database, etc.
         return jsonify({
