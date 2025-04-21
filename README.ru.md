@@ -168,8 +168,7 @@ sequenceDiagram
 
     FE->>BE: POST /validate (initData)
     BE->>BE: Парсинг initData (извлечение received_hash, other_data)
-    BE->>BE: Подготовка data_check_string (сортировка other_data, формат ключ=значение
-)
+    BE->>BE: Подготовка data_check_string (сортировка other_data, формат ключ=значение)
     BE->>Crypto: Вычисление secret_key = HMAC_SHA256("WebAppData", BOT_TOKEN)
     Crypto-->>BE: возвращает secret_key
     BE->>Crypto: Вычисление expected_hash = HMAC_SHA256(secret_key, data_check_string)
